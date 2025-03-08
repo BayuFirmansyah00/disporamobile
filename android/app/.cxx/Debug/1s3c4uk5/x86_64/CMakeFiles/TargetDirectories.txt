@@ -1,0 +1,2 @@
+C:/Users/ACER NITRO/dispora/android/app/.cxx/Debug/1s3c4uk5/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/ACER NITRO/dispora/android/app/.cxx/Debug/1s3c4uk5/x86_64/CMakeFiles/rebuild_cache.dir
