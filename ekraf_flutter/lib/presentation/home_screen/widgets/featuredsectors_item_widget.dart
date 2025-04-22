@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../models/sector_model.dart';
+import '../../../models/home_sector_model.dart';
 
 class FeaturedsectorsItemWidget extends StatelessWidget {
   final SectorModel sector;

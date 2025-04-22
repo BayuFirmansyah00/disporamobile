@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../sektor_model.dart';
+import '../../../models/sektor_sektor_model.dart';
 import 'sektor_item_widget.dart';
+import '../../subsektor_screen/subsektor_screen.dart'; // Import screen tujuan
 
 class SektorGrid extends StatelessWidget {
   final List<Sektor> sektorList;
@@ -21,7 +22,20 @@ class SektorGrid extends StatelessWidget {
           child: SektorItemWidget(
             title: sektor.name,
             imagePath: sektor.imagePath,
-            onTap: sektor.onTap,
+            // Menambahkan navigasi saat item di-tap
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SubsektorScreen(
+                    sector: {
+                      'id': sektor.id.toString(),
+                      'name': sektor.name, 
+                      'imagePath': sektor.imagePath},
+                  ),
+                ),
+              );
+            },
           ),
         );
       }).toList(),

@@ -50,7 +50,7 @@ class AppRoutes {
     informasiEventScreen: (context) => InformasiEventScreen(),
     sektorScreen: (context) => SektorScreen(),
     //subsektorScreen: (context) => SubsektorScreen(),
-    pelakuUsahaScreen: (context) => PelakuUsahaScreen(),
+    // pelakuUsahaScreen: (context) => PelakuUsahaScreen(),
     informasiUsahaScreen: (context) => InformasiUsahaScreen(),
     appNavigationScreen: (context) => AppNavigationScreen(),
   };

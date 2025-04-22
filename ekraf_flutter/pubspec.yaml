@@ -51,7 +51,7 @@ dependencies:
   liquid_pull_to_refresh: ^3.0.1
   http: ^1.2.1
   shared_preferences: ^2.5.3
-  flutter_screenutil: ^5.9.3
+  # flutter_screenutil: ^5.9.3
 
 dev_dependencies:
   flutter_test:

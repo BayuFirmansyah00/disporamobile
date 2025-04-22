@@ -1,54 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../sektor_screen.dart'; // Pastikan path ini benar
+import 'package:flutter/material.dart'; // Pastikan kamu pakai screenutil
+import '../../../../core/app_export.dart'; // Pastikan path ini benar
+import '../../../../widgets/custom_icon_button.dart'; // Pastikan path ini benar
 
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ScreenUtilInit(
-      designSize: Size(360, 690), // Sesuaikan dengan ukuran desain Anda
-      builder: (context, child) {
-        return MaterialApp(
-          title: 'Aplikasi Sektor',
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-          ),
-          home: SektorScreen(), // Ganti dengan widget utama Anda
-        );
-      },
-    );
-  }
-}
-
-class CustomIconButton extends StatelessWidget {
-  final double height;
-  final double width;
-  final EdgeInsetsGeometry padding;
-  final Widget child;
-
-  const CustomIconButton({
-    Key? key,
-    required this.height,
-    required this.width,
-    required this.padding,
-    required this.child,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: height.h, // Menggunakan ScreenUtil untuk tinggi
-      width: width.w, // Menggunakan ScreenUtil untuk lebar
-      padding: padding,
-      child: child,
-    );
-  }
-}
-
+// Widget untuk menampilkan gambar dalam lingkaran
 class CustomImageView extends StatelessWidget {
   final String imagePath;
 
@@ -56,17 +10,26 @@ class CustomImageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(imagePath); // Menampilkan gambar dengan path yang diberikan
+    return ClipOval(
+      child: Image.asset(
+        imagePath,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      ),
+    );
   }
 }
 
+// Style untuk teks kecil warna abu-abu
 class CustomTextStyles {
   static TextStyle bodySmallGray900_1 = TextStyle(
-    fontSize: 14.sp, // Gunakan flutter_screenutil jika ingin responsif
+    fontSize: 13.h, // Ukuran teks responsif
     color: Colors.grey[900],
   );
 }
 
+// Widget utama item sektor
 class SektorItemWidget extends StatelessWidget {
   final String title;
   final String imagePath;
@@ -82,19 +45,36 @@ class SektorItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap ?? () {}, // Menyediakan fungsi default jika onTap null
+      onTap: onTap ?? () {},
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          CustomIconButton(
-            height: 40.h,
-            width: 40.h,
-            padding: EdgeInsets.all(8.h),
+          Container(
+            height: 50.h,
+            width: 50.h,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                )
+              ],
+            ),
+            padding: EdgeInsets.all(6.h),
             child: CustomImageView(imagePath: imagePath),
           ),
           SizedBox(height: 6.h),
           Text(
             title,
-            style: CustomTextStyles.bodySmallGray900_1,
+            style: CustomTextStyles.bodySmallGray900_1.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

@@ -156,6 +156,8 @@ class ImageConstant {
   static String nganjuk = '$imagePath/nganjuk.png';
 
   static String arrow = '$imagePath/img_circle_arrow_right.png';
-  static String arrowleft = '$imagePath/img_arrow_LEFT.png';
+  static String arrowleft = '$imagePath/img_arrow_left.png';
   static String language = '$imagePath/language.png';
+  static String pengusaha = '$imagePath/img_pengusaha.png';
+  static String search = '$imagePath/img_search.png';
 }

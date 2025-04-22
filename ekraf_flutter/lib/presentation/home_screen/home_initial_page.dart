@@ -10,7 +10,7 @@ import 'widgets/featuredsectors_item_widget.dart';
 import 'widgets/home_one_item_widget.dart';
 import 'widgets/listselengkapny_item_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../models/sector_model.dart';
+import '../../../models/home_sector_model.dart';
 import '../../../models/event_model.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -19,6 +19,7 @@ import '../../services/api_service.dart';
 import '../sektor_screen/sektor_screen.dart';
 import '../subsektor_screen/subsektor_screen.dart';
 import '../informasi_event_screen/informasi_event_screen.dart';
+import '../../../models/sektor_sektor_model.dart';
 
 class HomeInitialPage extends StatefulWidget {
   const HomeInitialPage({Key? key}) : super(key: key);
@@ -157,17 +158,17 @@ class HomeInitialPageState extends State<HomeInitialPage> {
   }
 
   Widget _buildCreativeCategories(BuildContext context) {
-    final List<Map<String, String>> sectors = [
-      {"image": ImageConstant.arsitektur, "title": "Arsitektur"},
-      {"image": ImageConstant.fotografi, "title": "Fotografi"},
-      {"image": ImageConstant.fesyen, "title": "Fesyen"},
-      {"image": ImageConstant.kriya, "title": "Kriya"},
-      {"image": ImageConstant.kuliner, "title": "Kuliner"},
-      {"image": ImageConstant.musik, "title": "Musik"},
-      {"image": ImageConstant.periklanan, "title": "Periklanan"},
-      {"image": ImageConstant.aplikasi, "title": "Aplikasi"},
-      {"image": ImageConstant.seniRupa, "title": "Seni Rupa"},
-      {"image": ImageConstant.lainnya, "title": "Lainnya"},
+    final List<Sektor> sectors = [
+      Sektor(id: 5, name: "Arsitektur", imagePath: ImageConstant.arsitektur),
+      Sektor(id: 9, name: "Fotografi", imagePath: ImageConstant.fotografi),
+      Sektor(id: 10, name: "Fesyen", imagePath: ImageConstant.fesyen),
+      Sektor(id: 4, name: "Kriya", imagePath: ImageConstant.kriya),
+      Sektor(id: 6, name: "Kuliner", imagePath: ImageConstant.kuliner),
+      Sektor(id: 7, name: "Musik", imagePath: ImageConstant.musik),
+      Sektor(id: 3, name: "Periklanan", imagePath: ImageConstant.periklanan),
+      Sektor(id: 12, name: "Aplikasi", imagePath: ImageConstant.aplikasi),
+      Sektor(id: 16, name: "Seni Rupa", imagePath: ImageConstant.seniRupa),
+      Sektor(id: 18, name: "Lainnya", imagePath: ImageConstant.lainnya),
     ];
 
     return Container(
@@ -204,13 +205,33 @@ class HomeInitialPageState extends State<HomeInitialPage> {
                   ),
               gridItems: List.generate(sectors.length, (index) {
                 final sector = sectors[index];
-                final title = sector["title"] ?? "";
-
                 return HomeOneItemWidget(
-                  imagePath: sector["image"] ?? "",
-                  title: title,
+                  imagePath: sector.imagePath,
+                  title: sector.name,
                   onTapKategori: () {
-                    onTapKategori(context, sector);
+                    // Cek apakah sektor "Lainnya" atau bukan
+                    if (sector.name == "Lainnya") {
+                      // Navigasi ke halaman khusus "Lainnya"
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => SektorScreen()),
+                      );
+                    } else {
+                      // Navigasi ke halaman subsektor sesuai sektor yang dipilih
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => SubsektorScreen(
+                                sector: {
+                                  'id': sector.id.toString(),
+                                  'name': sector.name,
+                                  'imagePath': sector.imagePath,
+                                },
+                              ),
+                        ),
+                      );
+                    }
                   },
                 );
               }),
@@ -322,10 +343,19 @@ class HomeInitialPageState extends State<HomeInitialPage> {
                     sector: sectors[index],
                     onTapSektorunggulan: () {
                       print('Tapped on: ${sectors[index].name}');
-                      onTapSektorunggulan(context, {
-                        'name': sectors[index].name,
-                        'image': sectors[index].image,
-                      });
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => SubsektorScreen(
+                                sector: {
+                                  'id': sectors[index].id.toString(), // ID sektor sebagai string
+                                  'name': sectors[index].name, // Nama sektor
+                                  'imagePath':sectors[index].image, // Path gambar sektor
+                                },
+                              ),
+                        ),
+                      );
                     },
                   );
                 },
