@@ -53,6 +53,11 @@ dependencies:
   shared_preferences: ^2.5.3
   shimmer: ^3.0.0
   dio: ^5.4.0
+  font_awesome_flutter: ^10.7.0
+  flutter_map: ^8.1.1 # Add the latest version of flutter_map
+  google_maps_flutter: ^2.7.0
+  latlong2: ^0.9.0
+   # Ensure latlong2 is also added
   # flutter_screenutil: ^5.9.3
 
 dev_dependencies:

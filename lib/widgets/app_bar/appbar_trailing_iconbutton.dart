@@ -3,7 +3,13 @@ import '../../core/app_export.dart';
 import '../custom_icon_button.dart';
 
 class AppbarTrailingIconButton extends StatelessWidget {
-  AppbarTrailingIconButton({
+  final double? height;
+  final double? width;
+  final String? imagePath;
+  final Function? onTap;
+  final EdgeInsetsGeometry? margin;
+
+  const AppbarTrailingIconButton({
     Key? key,
     this.imagePath,
     this.height,
@@ -11,12 +17,6 @@ class AppbarTrailingIconButton extends StatelessWidget {
     this.onTap,
     this.margin,
   }) : super(key: key);
-
-  final double? height;
-  final double? width;
-  final String? imagePath;
-  final Function? onTap;
-  final EdgeInsetsGeometry? margin;
 
   @override
   Widget build(BuildContext context) {

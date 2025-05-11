@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:responsive_grid_list/responsive_grid_list.dart';
 import '../../../core/app_export.dart';
@@ -10,14 +9,13 @@ import '../../../widgets/app_bar/appbar_trailing_iconbutton.dart';
 import '../../../widgets/app_bar/custom_app_bar.dart';
 import '../../../widgets/custom_outlined_button.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../models/home_sector_model.dart';
 import '../../../models/event_model.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../notifikasi_screen/notifikasi_screen.dart';
 import '../../services/api_service.dart';
+import '../notifikasi_screen/notifikasi_screen.dart';
 import '../sektor_screen/sektor_screen.dart';
-import '../subsektor_screen/subsektor_screen.dart';
+import '../pelaku_usaha_screen/pelaku_usaha_screen.dart';
 import '../informasi_event_screen/informasi_event_screen.dart';
 import '../../../models/Event.dart';
 import '../../../models/Article.dart';
@@ -35,6 +33,14 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
+  late Future<List<Event>> _eventsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _eventsFuture = fetchEvents();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -42,7 +48,6 @@ class HomePageState extends State<HomePage> {
       decoration: AppDecoration.fillOnPrimary,
       child: Column(
         children: [
-          // AppBar tetap di atas
           CustomAppBar(
             height: 60.h,
             title: Padding(
@@ -56,8 +61,8 @@ class HomePageState extends State<HomePage> {
                 onTap: () {
                   onTapBellone(context);
                 },
-                width: 60,
-                height: 60,
+                width: 36.h,
+                height: 36.h,
               ),
             ],
           ),
@@ -75,8 +80,6 @@ class HomePageState extends State<HomePage> {
                   SizedBox(height: 12.h),
                   _buildLatestArticels(context),
                   SizedBox(height: 10.h),
-                  // SizedBox(height: 54.h),
-                  // _buildHighlightedArticles(context),
                 ],
               ),
             ),
@@ -96,9 +99,9 @@ class HomePageState extends State<HomePage> {
       }
     } catch (e) {
       debugPrint('Error launching URL: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal membuka tautan')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal membuka tautan')),
+      );
     }
   }
 
@@ -111,14 +114,13 @@ class HomePageState extends State<HomePage> {
       ),
       child: Stack(
         children: [
-          // Teks dan tombol di kiri
           Padding(
             padding: EdgeInsets.only(left: 20.h, top: 20.h, bottom: 20.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: 200.h, // Lebih lebar agar teks tidak terpotong
+                  width: 200.h,
                   child: Text(
                     'EKONOMI KREATIF KABUPATEN NGANJUK IKI WOOO',
                     maxLines: 3,
@@ -128,7 +130,7 @@ class HomePageState extends State<HomePage> {
                 ),
                 SizedBox(height: 10.h),
                 CustomOutlinedButton(
-                  height: 30.h, // Ukuran tombol lebih besar
+                  height: 30.h,
                   width: 160.h,
                   text: 'Kunjungi situs website kami',
                   buttonStyle: CustomButtonStyles.outlineOnPrimary,
@@ -141,13 +143,12 @@ class HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          // Gambar di kanan
           Positioned(
             right: -20.h,
             bottom: -30,
             child: CustomImageView(
               imagePath: ImageConstant.nganjuk,
-              height: 180.h, // Sesuaikan ukuran dengan desain
+              height: 180.h,
               width: 200.h,
             ),
           ),
@@ -158,187 +159,147 @@ class HomePageState extends State<HomePage> {
 
   Future<List<Sector>> fetchSectors() async {
     try {
-      // Gunakan endpoint dari Config
       final response = await ApiService.get(Config.sectorsEndpoint);
 
-      final jsonMap = response as Map<String, dynamic>;
+      if (response is! Map<String, dynamic>) {
+        throw Exception('Invalid response format: Expected a Map<String, dynamic>');
+      }
+
+      final jsonMap = response;
       print('Response API: $jsonMap');
 
-      // Asumsikan response format: { "sectors": [...] }
       final List<dynamic> rawList = (jsonMap['sectors'] ?? []) as List<dynamic>;
 
-      return rawList
-          .map<Sector>((item) => Sector.fromJson(item as Map<String, dynamic>))
+      List<Sector> sectors = rawList
+          .map<Sector>((item) {
+            if (item is! Map<String, dynamic>) {
+              throw Exception('Invalid sector item format: Expected a Map<String, dynamic>');
+            }
+            return Sector.fromJson(item);
+          })
           .toList();
-    } catch (e) {
+
+      // Tambahkan sektor "Musik" jika tidak ada di data API
+      bool hasMusik = sectors.any((sector) => sector.name.toLowerCase() == "musik");
+      if (!hasMusik) {
+        sectors.add(Sector(
+          id: '7',
+          name: 'Musik',
+          iconUrl: '',
+          isAsset: false,
+        ));
+      }
+
+      return sectors;
+    } catch (e, stackTrace) {
       print('Error fetching sectors: $e');
+      print('StackTrace: $stackTrace');
       throw Exception('Gagal memuat data sektor: ${e.toString()}');
     }
   }
 
-  Widget _buildCreativeCategories(BuildContext context) {
-    return Container(
-      width: double.maxFinite,
-      margin: EdgeInsets.only(left: 22.h, right: 22.h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(left: 2.h),
-            child: Text('Sektor', style: CustomTextStyles.titleMediumSemiBold),
+Widget _buildCreativeCategories(BuildContext context) {
+  return Padding(
+    padding: EdgeInsets.symmetric(horizontal: 20), // padding kiri dan kanan global
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Judul "Kategori"
+        Padding(
+          padding: const EdgeInsets.only(left: 4.0, bottom: 16), // lebih dekat ke grid
+          child: Text(
+            'Sektor Ekonomi Kreatif',
+            style: CustomTextStyles.titleMediumSemiBold,
           ),
-          SizedBox(height: 20.h),
+        ),
+        // FutureBuilder dengan Wrap (Grid)
+        FutureBuilder<List<Sector>>(
+          future: fetchSectors(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Text("Tidak ada kategori tersedia."));
+            } else {
+              final sectors = snapshot.data!;
+              final selectedSectorIds = ['14', '6', '11', '8', '4', '17', '1', '5', '3'];
+              final displayedSectors = sectors
+                  .where((sector) => selectedSectorIds.contains(sector.id))
+                  .toList()
+                ..sort((a, b) => selectedSectorIds.indexOf(a.id).compareTo(selectedSectorIds.indexOf(b.id)));
 
-          FutureBuilder<List<Sector>>(
-            future: fetchSectors(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(child: Text("Error: ${snapshot.error}"));
-              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(child: Text("Tidak ada kategori tersedia."));
-              } else {
-                final sectors = snapshot.data!;
-                final displayedSectors = sectors.take(9).toList();
-                displayedSectors.add(
-                  Sector(
-                    id: 'lainnya',
-                    name: 'Lainnya',
-                    iconUrl: 'assets/images/lainnya.png',
-                    isAsset: true,
-                  ),
-                );
+              displayedSectors.add(
+                Sector(
+                  id: 'lainnya',
+                  name: 'Lainnya',
+                  iconUrl: 'assets/images/lainnya.png',
+                  isAsset: true,
+                ),
+              );
 
-                return Wrap(
-                  spacing: 22.h,
-                  runSpacing: 20.h,
-                  children:
-                      displayedSectors.map((sector) {
-                        return GestureDetector(
-                          onTap: () {
-                            if (sector.name == "Lainnya") {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SektorScreen(),
-                                ),
-                              );
-                            } else {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => SubsektorScreen(
-                                        sector: {
-                                          'id': sector.id.toString(),
-                                          'name': sector.name,
-                                          'imagePath': sector.iconUrl,
-                                        },
-                                      ),
-                                ),
-                              );
-                            }
-                          },
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 50.h,
-                                height: 50.h,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black12,
-                                      blurRadius: 4,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(3.0),
-                                  child:
-                                      sector.isAsset
-                                          ? Image.asset(
-                                            sector.iconUrl,
-                                            fit: BoxFit.contain,
-                                            errorBuilder: (
-                                              context,
-                                              error,
-                                              stackTrace,
-                                            ) {
-                                              print(
-                                                'Error loading asset image: ${sector.iconUrl}',
-                                              );
-                                              return Icon(
-                                                Icons.category,
-                                                color: Colors.grey,
-                                              );
-                                            },
-                                          )
-                                          : Image.network(
-                                            sector.iconUrl,
-                                            fit: BoxFit.contain,
-                                            headers: {
-                                              "Accept": "image/*",
-                                            }, // Tambahkan headers jika perlu
-                                            errorBuilder: (
-                                              context,
-                                              error,
-                                              stackTrace,
-                                            ) {
-                                              print(
-                                                'Error loading network image: ${sector.iconUrl}',
-                                              );
-                                              print('Error details: $error');
-                                              return Icon(
-                                                Icons.image_not_supported,
-                                                color: Colors.grey,
-                                              );
-                                            },
-                                            loadingBuilder: (
-                                              context,
-                                              child,
-                                              loadingProgress,
-                                            ) {
-                                              if (loadingProgress == null)
-                                                return child;
-                                              return CircularProgressIndicator();
-                                            },
-                                          ),
-                                ),
-                              ),
-                              SizedBox(height: 6.h),
-                              Text(
-                                sector.name,
-                                style: TextStyle(fontSize: 12.h),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+              return Wrap(
+                spacing: 16, // jarak antar kolom
+                runSpacing: 28, // jarak antar baris
+                children: displayedSectors.map((sector) {
+                  return GestureDetector(
+                    onTap: () {
+                      if (sector.name == "Lainnya") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => SektorScreen()),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PelakuUsahaScreen(
+                              sectorId: int.parse(sector.id),
+                            ),
                           ),
                         );
-                      }).toList(),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
+                      }
+                    },
+                    child: SectorsGrid(
+                      sector: sector,
+                      onTapKategori: () {
+                        if (sector.name == "Lainnya") {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => SektorScreen()),
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PelakuUsahaScreen(
+                                sectorId: int.parse(sector.id),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  );
+                }).toList(),
+              );
+            }
+          },
+        ),
+      ],
+    ),
+  );
+}
 
-  //ini bagian event
+
   Future<List<Event>> fetchEvents() async {
     try {
-      // Menggunakan endpoint dari Config
       final result = await ApiService.get(Config.eventsEndpoint);
       print('Raw API Response: ${jsonEncode(result)}');
 
       List<dynamic> rawList = [];
 
-      // Handle berbagai struktur response
       if (result is Map<String, dynamic>) {
         if (result['data'] is Map && result['data']['data'] is List) {
           rawList = result['data']['data'] as List<dynamic>;
@@ -358,7 +319,6 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  //event terbaru
   Widget _buildLatestEvents(BuildContext context) {
     return Container(
       width: double.maxFinite,
@@ -375,22 +335,36 @@ class HomePageState extends State<HomePage> {
           ),
           SizedBox(height: 20.h),
           FutureBuilder<List<Event>>(
-            future: fetchEvents(),
+            future: _eventsFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return _buildLoading();
               }
-
               if (snapshot.hasError) {
                 return _buildError(snapshot.error.toString());
               }
-
               final events = snapshot.data ?? [];
               if (events.isEmpty) {
                 return _buildEmpty();
               }
-
-              return _buildEventList(events);
+              return SizedBox(
+                height: 150.h,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: events.length,
+                  itemBuilder: (context, index) {
+                    final event = events[index];
+                    return Padding(
+                      padding: EdgeInsets.only(right: 16.h),
+                      child: RecentEvents(
+                        imageUrl: event.thumbnail,
+                        title: event.title,
+                        onTapRowsunglasses: () => _onEventTap(context, event),
+                      ),
+                    );
+                  },
+                ),
+              );
             },
           ),
         ],
@@ -401,69 +375,56 @@ class HomePageState extends State<HomePage> {
   Widget _buildLoading() => Center(child: CircularProgressIndicator());
 
   Widget _buildError(String error) => Column(
-    children: [
-      Icon(Icons.error_outline, color: Colors.red),
-      SizedBox(height: 8),
-      Text('Gagal memuat event: $error', style: TextStyle(color: Colors.red)),
-    ],
-  );
+        children: [
+          Icon(Icons.error_outline, color: Colors.red),
+          SizedBox(height: 8),
+          Text('Gagal memuat event: $error', style: TextStyle(color: Colors.red)),
+        ],
+      );
 
   Widget _buildEmpty() => Column(
-    children: [
-      Icon(Icons.event_busy, color: Colors.grey),
-      SizedBox(height: 8),
-      Text('Belum ada event saat ini', style: TextStyle(color: Colors.grey)),
-    ],
-  );
-
-  Widget _buildEventList(List<Event> events) => SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: Row(
-      children:
-          events
-              .map(
-                (event) => Padding(
-                  padding: EdgeInsets.only(right: 16.h),
-                  child: RecentEvents(
-                    imageUrl: event.thumbnail,
-                    title: event.title,
-                    onTapRowsunglasses: () => _onEventTap(context, event),
-                  ),
-                ),
-              )
-              .toList(),
-    ),
-  );
+        children: [
+          Icon(Icons.event_busy, color: Colors.grey),
+          SizedBox(height: 8),
+          Text('Belum ada event saat ini', style: TextStyle(color: Colors.grey)),
+        ],
+      );
 
   Future<List<Article>> fetchArticles() async {
     try {
-      // Gunakan endpoint dari Config
       final result = await ApiService.get(Config.articlesEndpoint);
-      print('Raw API Response: ${jsonEncode(result)}');
+      print('Raw API Response for articles: ${jsonEncode(result)}');
 
       List<dynamic> rawList = [];
 
-      // Validasi struktur response
       if (result is Map<String, dynamic>) {
         if (result['data'] is Map && result['data']['data'] is List) {
           rawList = result['data']['data'] as List<dynamic>;
-        } else if (result['events'] is List) {
-          rawList = result['events'] as List<dynamic>;
+        } else if (result['articles'] is List) {
+          rawList = result['articles'] as List<dynamic>;
+        } else {
+          throw Exception('Unexpected API response structure: $result');
         }
       } else if (result is List) {
         rawList = result;
+      } else {
+        throw Exception('Unexpected API response structure: $result');
       }
 
-      return rawList.map((item) {
-          return Article.fromJson(item as Map<String, dynamic>);
+      print('Raw list before mapping: $rawList');
+      final articles = rawList.map((item) {
+        print('Mapping item: $item');
+        return Article.fromJson(item as Map<String, dynamic>);
       }).toList();
-        } catch (e) {
-        print('Error fetching articles: $e');
-        throw Exception('Gagal memuat artikel: ${e.toString()}');
-        }
+      print('Parsed articles: ${articles.map((a) => a.thumbnail).toList()}');
+      return articles;
+    } catch (e) {
+      print('Error fetching articles: $e');
+      throw Exception('Gagal memuat artikel: ${e.toString()}');
+    }
   }
-  //artikel terbaru
-  Widget _buildLatestArticels(BuildContext context) {
+
+Widget _buildLatestArticels(BuildContext context) {
     return Container(
       width: double.maxFinite,
       margin: EdgeInsets.only(left: 22.h, right: 22.h),
@@ -484,72 +445,57 @@ class HomePageState extends State<HomePage> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return _buildLoadingArticle();
               }
-
               if (snapshot.hasError) {
                 return _buildErrorArticle(snapshot.error.toString());
               }
-
               final articles = snapshot.data ?? [];
               if (articles.isEmpty) {
                 return _buildEmptyArticle();
               }
-
-              return _buildArticleList(articles);
+              print('Rendering articles: ${articles.map((a) => a.thumbnail).toList()}');
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: articles.map((article) => Padding(
+                    padding: EdgeInsets.only(right: 16.h),
+                    child: RecentArticles(
+                      article: article,
+                    ),
+                  )).toList(),
+                ),
+              );
             },
           ),
         ],
       ),
     );
   }
-
-  Widget _buildArticleList(List<Article> articles) => SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: Row(
-      children:
-          articles
-              .map(
-                (article) => Padding(
-                  padding: EdgeInsets.only(right: 16.h),
-                  child: RecentArticles(
-                    imageUrl: article.thumbnail,
-                    title: article.title,
-                    onTapSektorunggulan: () => _onArticleTap(context, article),
-                  ),
-                ),
-              )
-              .toList(),
-    ),
-  );
-
-  // Reuse existing helper widgets dari event
+  
   Widget _buildLoadingArticle() => Center(child: CircularProgressIndicator());
 
   Widget _buildErrorArticle(String error) => Column(
-    children: [
-      Icon(Icons.error_outline, color: Colors.red),
-      SizedBox(height: 8),
-      Text('Gagal memuat artikel: $error', style: TextStyle(color: Colors.red)),
-    ],
-  );
+        children: [
+          Icon(Icons.error_outline, color: Colors.red),
+          SizedBox(height: 8),
+          Text('Gagal memuat artikel: $error', style: TextStyle(color: Colors.red)),
+        ],
+      );
 
   Widget _buildEmptyArticle() => Column(
-    children: [
-      Icon(Icons.article_outlined, color: Colors.grey),
-      SizedBox(height: 8),
-      Text('Belum ada artikel terbaru', style: TextStyle(color: Colors.grey)),
-    ],
-  );
+        children: [
+          Icon(Icons.article_outlined, color: Colors.grey),
+          SizedBox(height: 8),
+          Text('Belum ada artikel terbaru', style: TextStyle(color: Colors.grey)),
+        ],
+      );
 
-  //Navigation to the notfikasiScreen when the action is triggered
   void onTapBellone(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const NotifikasiScreen()),
     );
-    // Navigator.pushNamed(context, AppRoutes.notifikasiScreen);
   }
 
-  //Navigation to the infoEventScreen when the action is triggered
   void _onEventTap(BuildContext context, Event event) {
     Navigator.push(
       context,
@@ -562,23 +508,5 @@ class HomePageState extends State<HomePage> {
     //   context,
     //   MaterialPageRoute(builder: (_) => InformasiArticleScreen(article: article)),
     // );
-  }
-
-  void onTapKategori(BuildContext context, Map<String, String> sector) {
-    final title = sector["title"];
-
-    if (title == "Lainnya") {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => SektorScreen()),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SubsektorScreen(sector: sector),
-        ),
-      );
-    }
   }
 }

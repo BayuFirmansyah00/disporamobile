@@ -1,94 +1,40 @@
-// import 'dart:convert';
-// import 'package:http/http.dart' as http;
-
-// class ApiService {
-//   static const String baseUrl = 'http://192.168.1.2:8000/api';
-
-//   static Future<List<dynamic>> get(String endpoint) async {
-//     final response = await http.get(Uri.parse('$baseUrl/$endpoint'));
-
-//     if (response.statusCode == 200) {
-//       return json.decode(response.body);
-//     } else {
-//       throw Exception('Failed to fetch $endpoint');
-//     }
-//   }
-// }
-
-// import 'dart:convert';
-// import 'package:http/http.dart' as http;
-
-// class ApiService {
-//   static Future<Map<String, dynamic>> get(String endpoint) async {
-//     final response = await http.get(Uri.parse('http://10.0.2.2:8000/api/$endpoint'));
-
-//     if (response.statusCode == 200) {
-//       return json.decode(response.body);
-//     } else {
-//       throw Exception('Failed to load data');
-//     }
-//   }
-// }
-
-
-// import 'package:http/http.dart' as http;
-
-// class ApiService {
-//   static const String _baseUrl = 'http://10.0.2.2:8000/api/';
-
-//   static Future<http.Response> get(String endpoint) async {
-//     final url = Uri.parse('$_baseUrl$endpoint');
-//     try {
-//       final response = await http.get(url);
-//       return response;
-//     } catch (e) {
-//       throw Exception('Gagal terhubung ke server: $e');
-//     }
-//   }
-// }
-
-// import 'dart:convert';
-// import 'package:http/http.dart' as http;
-
-// class ApiService {
-//   static Future<dynamic> get(String endpoint) async {
-//     final response = await http.get(
-//       Uri.parse('http://10.0.2.2:8000/api/$endpoint'),
-//       headers: {
-//         'Authorization': 'Bearer <8|skYWvLmps29Mi74Cmix2h0sR3QCOTumXtXyHku5v70f3c6dd>',
-//         'Content-Type': 'application/json',
-//         'Accept': 'application/json',
-//       },
-//     );
-
-//     if (response.statusCode == 200) {
-//       return json.decode(response.body);
-//     } else {
-//       throw Exception('Failed to load data (status ${response.statusCode})');
-//     }
-//   }
-// }
-
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/config.dart';
 
 class ApiService {
-  static Future<dynamic> get(String endpoint) async {
-    final response = await http.get(
-      Uri.parse('${Config.baseApiUrl}/$endpoint'),
-      headers: {
-        'Authorization': Config.authToken,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    );
+  static Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
+    Map<String, String> defaultHeaders = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to load data (status ${response.statusCode})');
+    final combinedHeaders = headers != null ? {...defaultHeaders, ...headers} : defaultHeaders;
+
+    try {
+      final response = await http.get(
+        Uri.parse('${Config.baseApiUrl}/$endpoint'),
+        headers: combinedHeaders,
+      ).timeout(Duration(seconds: 30));
+
+      print('Request URL: ${Config.baseApiUrl}/$endpoint');
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load data (status ${response.statusCode})');
+      }
+    } catch (e) {
+      print('Error fetching data: $e');
+      throw e;
     }
+  }
+
+  static Map<String, String> getImageHeaders() {
+    return {
+      'Accept': 'image/*',
+    };
   }
 }

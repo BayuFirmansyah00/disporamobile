@@ -10,7 +10,6 @@ import '../presentation/sektor_screen/sektor_screen.dart';
 import '../presentation/splash_screen/splash.dart';
 // import '../presentation/home_screen/home_initial_page.dart';
 // import '../presentation/splash_two_screen/splash_two_screen.dart';
-import '../presentation/subsektor_screen/subsektor_screen.dart';
 import '../presentation/home_screen/HomePage.dart';
 
 // ignore_for_file: must_be_immutable

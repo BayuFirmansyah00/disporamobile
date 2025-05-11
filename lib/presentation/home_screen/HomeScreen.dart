@@ -54,7 +54,7 @@ class HomeScreen extends StatelessWidget {
           ),
           GButton(
             icon: Icons.event,
-            text: 'Event',
+            text: 'Informasi',
             onPressed: () {
               navigatorKey.currentState?.pushNamed(AppRoutes.eventPage);
             },

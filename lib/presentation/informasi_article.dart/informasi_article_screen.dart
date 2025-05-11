@@ -5,14 +5,14 @@ import '../../core/app_export.dart';
 import '../../widgets/app_bar/appbar_leading_image.dart';
 import '../../widgets/app_bar/appbar_subtitle.dart';
 import '../../widgets/app_bar/custom_app_bar.dart';
-import '../../models/Event.dart';
+import '../../models/Article.dart';
 
-class InformasiEventScreen extends StatelessWidget {
-  final Event event;
+class InformasiArticleScreen extends StatelessWidget {
+  final Article article;
 
-  const InformasiEventScreen({
+  const InformasiArticleScreen({
     Key? key,
-    required this.event,
+    required this.article,
   }) : super(key: key);
 
   @override
@@ -31,9 +31,9 @@ class InformasiEventScreen extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16.h),
-                child: event.thumbnail.isNotEmpty
+                child: article.thumbnail.isNotEmpty
                     ? CachedNetworkImage(
-                        imageUrl: event.thumbnail,
+                        imageUrl: article.thumbnail,
                         height: 242.h,
                         width: double.maxFinite,
                         fit: BoxFit.cover,
@@ -63,7 +63,7 @@ class InformasiEventScreen extends StatelessWidget {
                         },
                         cacheManager: CacheManager(
                           Config(
-                            'customCacheKey',
+                            'articleCacheKey',
                             stalePeriod: Duration(days: 7),
                             maxNrOfCacheObjects: 100,
                           ),
@@ -77,11 +77,11 @@ class InformasiEventScreen extends StatelessWidget {
                       ),
               ),
               Text(
-                event.title,
+                article.title,
                 style: CustomTextStyles.titleMediumInter,
               ),
               Text(
-                event.description,
+                article.description ?? 'Tidak ada deskripsi',
                 maxLines: 6,
                 overflow: TextOverflow.ellipsis,
                 style: CustomTextStyles.bodyMedium13.copyWith(height: 1.38),
@@ -101,18 +101,18 @@ class InformasiEventScreen extends StatelessWidget {
         imagePath: ImageConstant.imgArrowLeft,
         margin: EdgeInsets.only(left: 20.h),
         onTap: () {
-          onTapArrowleftone(context);
+          onTapArrowLeft(context);
         },
       ),
       title: AppbarSubtitle(
-        text: "Informasi Event",
+        text: "Informasi Artikel",
         margin: EdgeInsets.only(left: 12.h),
       ),
     );
   }
 
   /// Navigates back to the previous screen.
-  void onTapArrowleftone(BuildContext context) {
+  void onTapArrowLeft(BuildContext context) {
     Navigator.pop(context);
   }
 }

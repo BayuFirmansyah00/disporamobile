@@ -1,74 +1,8 @@
-// import 'package:flutter/material.dart';
-// import '../../../core/app_export.dart';
-// import '../../../theme/custom_button_style.dart';
-// import '../../../widgets/custom_outlined_button.dart';
-
-// class EventlistItemWidget extends StatelessWidget {
-//   final String title;
-//   final String imageUrl;
-//   final VoidCallback? onTapColumnSelengkap;
-
-//   const EventlistItemWidget({
-//     Key? key,
-//     required this.title,
-//     required this.imageUrl,
-//     this.onTapColumnSelengkap,
-//   }) : super(key: key);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return GestureDetector(
-//       onTap: onTapColumnSelengkap,
-//       child: Container(
-//         width: double.maxFinite,
-//         decoration: BoxDecoration(
-//           color: Color(0xFF123458),
-//           borderRadius: BorderRadiusStyle.roundedBorder16,
-//         ),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.end,
-//           children: [
-//             ClipRRect(
-//               borderRadius: BorderRadius.vertical(top: Radius.circular(16.h)),
-//               child: Image.network(
-//                 imageUrl,
-//                 height: 168.h,
-//                 width: double.maxFinite,
-//                 fit: BoxFit.cover,
-//                 errorBuilder:
-//                     (context, error, stackTrace) =>
-//                         Icon(Icons.error, size: 100),
-//               ),
-//             ),
-//             Padding(
-//               padding: EdgeInsets.symmetric(horizontal: 8.h, vertical: 8.h),
-//               child: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-//             ),
-//             CustomOutlinedButton(
-//               height: 28.h,
-//               width: 124.h,
-//               text: "Selengkapnya",
-//               margin: EdgeInsets.only(right: 4.h),
-//               rightIcon: Container(
-//                 margin: EdgeInsets.only(left: 2.h),
-//                 child: CustomImageView(
-//                   imagePath: ImageConstant.arrow,
-//                   height: 12.h,
-//                   width: 12.h,
-//                   fit: BoxFit.contain,
-//                 ),
-//               ),
-//               buttonTextStyle: CustomTextStyles.bodySmallOnPrimary,
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import '../../../core/app_export.dart';
+import '../../../services/api_service.dart'; // Impor ApiService
 
 class EventlistItemWidget extends StatelessWidget {
   final String title;
@@ -99,13 +33,34 @@ class EventlistItemWidget extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
                 height: 168,
                 width: double.maxFinite,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    Icon(Icons.error, size: 100, color: Colors.white),
+                httpHeaders: ApiService.getImageHeaders(), // Gunakan header autentikasi
+                placeholder: (context, url) => Container(
+                  height: 168,
+                  width: double.maxFinite,
+                  color: Colors.grey[300],
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (context, url, error) {
+                  print('Error loading image: $error, URL: $imageUrl');
+                  return Container(
+                    height: 168,
+                    width: double.maxFinite,
+                    color: Colors.grey[300],
+                    child: Icon(Icons.broken_image, size: 50, color: Colors.white),
+                  );
+                },
+                cacheManager: CacheManager(
+                  Config(
+                    'customCacheKey',
+                    stalePeriod: const Duration(days: 7),
+                    maxNrOfCacheObjects: 100,
+                  ),
+                ),
               ),
             ),
             Padding(
@@ -135,31 +90,30 @@ class EventlistItemWidget extends StatelessWidget {
                 ],
               ),
             ),
-            // Menempatkan tombol "Selengkapnya" di kanan bawah
             Padding(
               padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
               child: Align(
-                alignment: Alignment.bottomRight, // Menempatkan di kanan bawah
+                alignment: Alignment.bottomRight,
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white, width: 1), // Garis putih
-                    borderRadius: BorderRadius.circular(8), // Sudut melengkung
+                    border: Border.all(color: Colors.white, width: 1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min, // Ukuran Row sesuai dengan konten
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // Padding di dalam tombol
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                         child: Text(
                           "Selengkapnya",
                           overflow: TextOverflow.ellipsis,
-                          style: CustomTextStyles.bodySmallOnPrimary, // Gaya teks
+                          style: CustomTextStyles.bodySmallOnPrimary,
                         ),
                       ),
-                      SizedBox(width: 4), // Jarak antara teks dan ikon
+                      SizedBox(width: 4),
                       CustomImageView(
                         imagePath: ImageConstant.arrow,
-                        height: 12, // Ukuran ikon
+                        height: 12,
                         width: 12,
                         fit: BoxFit.contain,
                       ),

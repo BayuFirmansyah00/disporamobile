@@ -149,6 +149,7 @@ class ImageConstant {
   static String aplikasi = '$imagePath/aplikasi.png';
   static String seniRupa = '$imagePath/seni_rupa.png';
   static String lainnya = '$imagePath/lainnya.png';
+  static String location = '$imagePath/location.png';
 
   static String imageNotFound = 'assets/images/image_not_found.png';
 
