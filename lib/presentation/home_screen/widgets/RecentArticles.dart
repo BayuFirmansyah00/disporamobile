@@ -69,7 +69,7 @@ class RecentArticles extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => InformasiArticleScreen(article: article),
+                  builder: (context) => InformasiArticleScreen(data: article),
                 ),
               );
             },

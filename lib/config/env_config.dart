@@ -10,8 +10,8 @@ class DevConfig implements EnvConfig {
   @override String get authToken => 'Bearer <9|ZbV9U21YOfpPILvUTz0zDNg6F6VIIzoegmwhm7Ht857f4525>';
 }
 
-// class ProdConfig implements EnvConfig {
-//   @override String get baseApiUrl => 'https://api.production.com';
-//   @override String get baseStorageUrl => 'https://storage.production.com';
-//   @override String get authToken => 'Bearer <9|ZbV9U21YOfpPILvUTz0zDNg6F6VIIzoegmwhm7Ht857f4525>';
-// }
+class ProdConfig implements EnvConfig {
+  @override String get baseApiUrl => 'https://api-ekrafnganjuk.pbltifnganjuk.com/api';
+  @override String get baseStorageUrl => 'https://api-ekrafnganjuk.pbltifnganjuk.com/storage';
+  @override String get authToken => 'Bearer <9|ZbV9U21YOfpPILvUTz0zDNg6F6VIIzoegmwhm7Ht857f4525>';
+}

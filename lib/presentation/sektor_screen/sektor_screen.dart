@@ -1,61 +1,120 @@
+import 'package:ekraf_kuy/models/Sector.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'widgets/sektor_grid.dart';
 import '../../models/sektor_sektor_model.dart';
 import '../pelaku_usaha_screen/pelaku_usaha_screen.dart';
 
-class SektorScreen extends StatelessWidget {
+class SektorScreen extends StatefulWidget {
   const SektorScreen({super.key});
+
+  @override
+  _SektorScreenState createState() => _SektorScreenState();
+}
+
+class _SektorScreenState extends State<SektorScreen> {
+  List<Sector> sectors = [];
+  bool isLoading = true;
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSectors();
+  }
+
+  Future<void> fetchSectors() async {
+    try {
+      final response = await http.get(Uri.parse('http://10.0.2.2:8000/api/sectors'));
+      if (response.statusCode == 200) {
+        final dynamic decodedResponse = jsonDecode(response.body);
+        List<dynamic> data;
+
+        // Handle both list and map responses, prioritizing 'sectors' key
+        if (decodedResponse is List) {
+          data = decodedResponse;
+        } else if (decodedResponse is Map && decodedResponse.containsKey('sectors')) {
+          data = decodedResponse['sectors'];
+        } else if (decodedResponse is Map && decodedResponse.containsKey('data')) {
+          data = decodedResponse['data'];
+        } else {
+          throw Exception('Unexpected response format: $decodedResponse');
+        }
+
+        print('Fetched sectors: $data'); // Debugging
+        setState(() {
+          sectors = data.map((json) => Sector.fromJson(json)).toList();
+          isLoading = false;
+        });
+        print('Sector names: ${sectors.map((s) => s.name).toList()}'); // Debugging
+      } else {
+        throw Exception('Failed to load sectors: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching sectors: $e');
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Gagal memuat data sektor: $e';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Semua Sektor")),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(8), // Mengurangi padding menjadi 8 untuk lebih kompak
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            buildKategori("Seni dan Desain Visual", [
-              Sektor(id: 9, name: "Fotografi", imagePath: 'assets/images/fotografi.png'),
-              Sektor(id: 16, name: "Seni Rupa", imagePath: 'assets/images/seni_rupa.png'),
-              Sektor(id: 1, name: "Desain Interior", imagePath: 'assets/images/desain_interior.png'),
-              Sektor(id: 2, name: "Desain Komunikasi Visual", imagePath: 'assets/images/dkv.png'),
-              Sektor(id: 17, name: "Desain Produk", imagePath: 'assets/images/desain_produk.png'),
-            ]),
-            SizedBox(height: 16),
-            buildKategori("Media dan Hiburan", [
-              Sektor(id: 8, name: "Film, Animasi, Video", imagePath: 'assets/images/film.png'),
-              Sektor(id: 11, name: "TV & Radio", imagePath: 'assets/images/tvradio.png'),
-              Sektor(id: 14, name: "Seni Pertunjukan", imagePath: 'assets/images/seni_pertunjukkan.png'),
-              Sektor(id: 7, name: "Musik", imagePath: 'assets/images/musik.png'),
-            ]),
-            SizedBox(height: 16),
-            buildKategori("Produk Kreatif dan Industri", [
-              Sektor(id: 13, name: "Pengembangan Permainan", imagePath: 'assets/images/game.png'),
-              Sektor(id: 12, name: "Aplikasi", imagePath: 'assets/images/aplikasi.png'),
-            ]),
-            SizedBox(height: 16),
-            buildKategori("Arsitektur dan Kriya", [
-              Sektor(id: 5, name: "Arsitektur", imagePath: 'assets/images/arsitektur.png'),
-              Sektor(id: 4, name: "Kriya", imagePath: 'assets/images/kriya.png'),
-            ]),
-            SizedBox(height: 16),
-            buildKategori("Fashion dan Kuliner", [
-              Sektor(id: 10, name: "Fashion", imagePath: 'assets/images/fashion.png'),
-              Sektor(id: 6, name: "Kuliner", imagePath: 'assets/images/kuliner.png'),
-            ]),
-            SizedBox(height: 16),
-            buildKategori("Periklanan dan Penerbitan", [
-              Sektor(id: 3, name: "Periklanan", imagePath: 'assets/images/periklanan.png'),
-              Sektor(id: 15, name: "Penerbitan", imagePath: 'assets/images/penerbitan.png'),
-            ]),
-          ],
-        ),
-      ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : errorMessage.isNotEmpty
+              ? Center(child: Text(errorMessage, style: TextStyle(color: Colors.red)))
+              : SingleChildScrollView(
+                  padding: EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      buildKategori("Seni dan Desain Visual", sectors.where((s) => [
+                            'fotografi',
+                            'seni rupa',
+                            'desain interior',
+                            'dkv',
+                            'produk',
+                          ].map((e) => e.trim().toLowerCase()).contains(s.name.trim().toLowerCase())).toList()),
+                      SizedBox(height: 16),
+                      buildKategori("Media dan Hiburan", sectors.where((s) => [
+                            'film',
+                            'televisi dan radio',
+                            'pertunjukan',
+                            'musik',
+                          ].map((e) => e.trim().toLowerCase()).contains(s.name.trim().toLowerCase())).toList()),
+                      SizedBox(height: 16),
+                      buildKategori("Produk Kreatif dan Industri", sectors.where((s) => [
+                            'game',
+                            'aplikasi',
+                          ].map((e) => e.trim().toLowerCase()).contains(s.name.trim().toLowerCase())).toList()),
+                      SizedBox(height: 16),
+                      buildKategori("Arsitektur dan Kriya", sectors.where((s) => [
+                            'arsitektur',
+                            'kriya',
+                          ].map((e) => e.trim().toLowerCase()).contains(s.name.trim().toLowerCase())).toList()),
+                      SizedBox(height: 16),
+                      buildKategori("Fashion dan Kuliner", sectors.where((s) => [
+                            'fashion',
+                            'kuliner',
+                          ].map((e) => e.trim().toLowerCase()).contains(s.name.trim().toLowerCase())).toList()),
+                      SizedBox(height: 16),
+                      buildKategori("Periklanan dan Penerbitan", sectors.where((s) => [
+                            'periklanan',
+                            'penerbitan',
+                          ].map((e) => e.trim().toLowerCase()).contains(s.name.trim().toLowerCase())).toList()),
+                    ],
+                  ),
+                ),
     );
   }
 
-  Widget buildKategori(String title, List<Sektor> items) {
+  Widget buildKategori(String title, List<Sector> items) {
+    print('Kategori $title - Items: ${items.map((s) => s.name).toList()}'); // Debugging
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -64,7 +123,12 @@ class SektorScreen extends StatelessWidget {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 12),
-        SektorGrid(sectorList: items),
+        items.isEmpty
+            ? Text(
+                'Tidak ada data untuk kategori ini',
+                style: TextStyle(color: Colors.grey),
+              )
+            : SektorGrid(sectorList: items),
       ],
     );
   }

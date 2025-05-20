@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../models/ProdukModel.dart';
@@ -19,7 +18,7 @@ class BusinessModel {
   final int sectorId;
   final int id;
   final double? latitude;
-  final double? longitude; // Tambahkan untuk maps
+  final double? longitude;
 
   BusinessModel({
     required this.namaUsaha,
@@ -36,7 +35,7 @@ class BusinessModel {
     required this.sectorId,
     required this.id,
     this.latitude,
-    this.longitude,
+    this.longitude, required String description,
   });
 
   static Future<BusinessModel> fromJson(
@@ -44,7 +43,9 @@ class BusinessModel {
     String sectorName = '',
     required int sectorId,
   }) async {
-    print('JSON Response: $json');
+    print('JSON Response untuk bisnis: $json');
+    final businessId = json['id'] ?? 0;
+    print('Business ID: $businessId');
     final profile = json['profile'] as String? ?? '';
     final logoUrl = profile.isNotEmpty && profile.startsWith('http')
         ? profile
@@ -53,18 +54,40 @@ class BusinessModel {
         ? profile
         : '${Config.baseStorageUrl}/pelaku_usaha/$profile';
 
+    // Validasi latitude dan longitude
+    double? latitude;
+    double? longitude;
+    if (json['latitude'] != null) {
+      final lat = double.tryParse(json['latitude'].toString());
+      if (lat != null && lat >= -90 && lat <= 90) {
+        latitude = lat;
+      }
+    }
+    if (json['longitude'] != null) {
+      final lon = double.tryParse(json['longitude'].toString());
+      if (lon != null && lon >= -180 && lon <= 180) {
+        longitude = lon;
+      }
+    }
+
     // Ambil produk dari API
+    final productUrl = '${Config.baseApiUrl}/business-products/$businessId';
+    print('Mengambil produk dari: $productUrl');
     final productResponse = await http.get(
-      Uri.parse('${Config.baseApiUrl}/products/${json['id']}'),
+      Uri.parse(productUrl),
     );
     List<ProdukModel> produkList = [];
     if (productResponse.statusCode == 200) {
       final data = jsonDecode(productResponse.body);
+      print('Respons produk: $data');
       final productsJson = data['data'] ?? [];
       produkList = (productsJson as List)
           .map((productJson) => ProdukModel.fromJson(productJson))
           .toList();
-      print('Produk ditemukan: $produkList'); // Debug
+      print('Produk ditemukan: ${produkList.length} item');
+      if (produkList.isNotEmpty) {
+        print('Detail produk pertama: ${produkList[0].nama}');
+      }
     } else {
       print('Gagal mengambil produk: ${productResponse.statusCode} - ${productResponse.body}');
     }
@@ -77,14 +100,15 @@ class BusinessModel {
       subsektor: '',
       namaPemilik: json['owner_name'] ?? 'Tidak diketahui',
       fotoPemilik: fotoPemilik,
-      noHp: json['phone'] ?? null, // Tambahkan jika ada field phone
+      noHp: json['phone'] ?? null,
       alamat: json['location'] ?? null,
       modePemesanan: null,
       daftarProduk: produkList,
       sectorId: sectorId,
-      id: json['id'] ?? 0,
-      latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
-      longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
+      id: businessId,
+      latitude: latitude,
+      longitude: longitude,
+      description: json['description'] ?? '',
     );
   }
 }

@@ -113,7 +113,7 @@ class _EventPageState extends State<EventPage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => InformasiEventScreen(
-                                  event: EventModelFile.Event( // Use alias for Event
+                                  data: EventModelFile.Event( // Use alias for Event
                                     id: event.id.toString(), // Convert id to String
                                     title: event.title,
                                     thumbnail: event.image,

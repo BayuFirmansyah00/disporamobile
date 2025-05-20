@@ -1,9 +1,9 @@
-import '../config/config.dart'; // Pastikan import config
+import '../config/config.dart';
 
 class Sector {
   final String id;
   final String name;
-  final String iconUrl; // Ubah dari iconClass ke iconUrl
+  final String iconUrl;
   final bool isAsset;
 
   Sector({
@@ -15,19 +15,14 @@ class Sector {
 
   factory Sector.fromJson(Map<String, dynamic> json) {
     final rawIcon = json['icon_url'] as String? ?? '';
-    String iconUrl;
+    String iconUrl = rawIcon; // Gunakan URL asli tanpa modifikasi kecuali diperlukan
 
-    if (rawIcon.isNotEmpty && rawIcon.startsWith('http')) {
-      // Tambahkan /sectors/ ke URL
-      iconUrl = rawIcon.replaceFirst(
-          'http://10.0.2.2:8000/storage/',
-          'http://10.0.2.2:8000/storage/sectors/'
-      );
-    } else {
-      iconUrl = '';
+    // Hanya tambahkan /sectors/ jika URL sudah mengandung base storage URL
+    if (rawIcon.isNotEmpty && rawIcon.startsWith(Config.baseStorageUrl)) {
+      iconUrl = rawIcon.replaceFirst(Config.baseStorageUrl, '${Config.baseStorageUrl}/sectors/');
     }
 
-    // Debug
+    // Debugging
     print('Original Icon URL: $rawIcon');
     print('Constructed Icon URL: $iconUrl');
 

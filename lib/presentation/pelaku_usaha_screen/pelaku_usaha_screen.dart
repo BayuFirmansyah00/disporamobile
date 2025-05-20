@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/app_export.dart';
-import '../../widgets/app_bar/appbar_leading_image.dart';
-import '../../widgets/app_bar/appbar_subtitle.dart';
-import '../../widgets/app_bar/custom_app_bar.dart';
-import '../../widgets/custom_search_view.dart';
 import 'widgets/businesslist_item_widget.dart';
 import '../../models/BusinessModel.dart';
+import '../../widgets/custom_search_view.dart'; // Ensure this is the correct path to CustomSearchView
 import '../../services/api_service.dart';
 import '../informasi_usaha_screen/informasi_usaha_screen.dart';
 
@@ -155,7 +152,9 @@ class _PelakuUsahaScreenState extends State<PelakuUsahaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: theme.colorScheme.onPrimary,
-      appBar: _buildAppBar(context),
+      appBar: AppBar(
+        title: const Text("Pelaku Usaha"),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -238,21 +237,6 @@ class _PelakuUsahaScreenState extends State<PelakuUsahaScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return CustomAppBar(
-      leadingWidth: 40.0,
-      leading: AppbarLeadingImage(
-        imagePath: ImageConstant.arrowleft,
-        margin: const EdgeInsets.only(left: 20.0),
-        onTap: () => Navigator.pop(context),
-      ),
-      title: AppbarSubtitle(
-        text: "Pelaku Usaha",
-        margin: const EdgeInsets.only(left: 12.0),
       ),
     );
   }

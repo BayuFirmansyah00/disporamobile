@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:responsive_grid_list/responsive_grid_list.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/app_export.dart';
 import '../../../theme/custom_button_style.dart';
 import '../../../widgets/app_bar/appbar_title.dart';
@@ -9,14 +9,6 @@ import '../../../widgets/app_bar/appbar_trailing_iconbutton.dart';
 import '../../../widgets/app_bar/custom_app_bar.dart';
 import '../../../widgets/custom_outlined_button.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../models/event_model.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../../services/api_service.dart';
-import '../notifikasi_screen/notifikasi_screen.dart';
-import '../sektor_screen/sektor_screen.dart';
-import '../pelaku_usaha_screen/pelaku_usaha_screen.dart';
-import '../informasi_event_screen/informasi_event_screen.dart';
 import '../../../models/Event.dart';
 import '../../../models/Article.dart';
 import '../../../models/Sector.dart';
@@ -24,6 +16,13 @@ import '../home_screen/widgets/RecentArticles.dart';
 import '../home_screen/widgets/RecentEvents.dart';
 import '../home_screen/widgets/SectorsGrid.dart';
 import '../../../config/config.dart';
+import '../login_screen/login_page.dart';
+import '../../services/api_service.dart';
+import '../notifikasi_screen/notifikasi_screen.dart';
+import '../sektor_screen/sektor_screen.dart';
+import '../pelaku_usaha_screen/pelaku_usaha_screen.dart';
+import '../informasi_event_screen/informasi_event_screen.dart';
+import '../chat_screen/ChatScreen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -34,11 +33,57 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   late Future<List<Event>> _eventsFuture;
+  bool _isLoggedIn = false;
+  String? _userRole;
 
   @override
   void initState() {
     super.initState();
     _eventsFuture = fetchEvents();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    final userRole = prefs.getString('user_role');
+    setState(() {
+      _isLoggedIn = token != null && token.isNotEmpty;
+      _userRole = userRole;
+    });
+  }
+
+  // Fungsi navigasi ke ChatScreen dengan pengecekan autentikasi lebih lengkap dan debugPrint
+  void onTapChat(BuildContext context) async {
+    if (_isLoggedIn) {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      final userRole = prefs.getString('user_role');
+      final userId = prefs.getInt('user_id');
+      debugPrint('Navigating to ChatScreen: token=$token, role=$userRole, userId=$userId');
+      if (token == null || userRole == null || userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data autentikasi tidak lengkap. Silakan login ulang.')),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+        return;
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ChatScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan login untuk mengakses chat')),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    }
   }
 
   @override
@@ -60,6 +105,25 @@ class HomePageState extends State<HomePage> {
                 margin: EdgeInsets.only(right: 17.h, bottom: 2.h),
                 onTap: () {
                   onTapBellone(context);
+                },
+                width: 36.h,
+                height: 36.h,
+              ),
+              AppbarTrailingIconButton(
+                imagePath: ImageConstant.chat,
+                margin: EdgeInsets.only(right: 17.h, bottom: 2.h),
+                onTap: () {
+                  debugPrint('Chat icon clicked');
+                  onTapChat(context);
+                },
+                width: 36.h,
+                height: 36.h,
+              ),
+              AppbarTrailingIconButton(
+                imagePath: _isLoggedIn ? ImageConstant.logout : ImageConstant.login,
+                margin: EdgeInsets.only(right: 17.h, bottom: 2.h),
+                onTap: () {
+                  _handleLoginOrLogout(context);
                 },
                 width: 36.h,
                 height: 36.h,
@@ -179,7 +243,6 @@ class HomePageState extends State<HomePage> {
           })
           .toList();
 
-      // Tambahkan sektor "Musik" jika tidak ada di data API
       bool hasMusik = sectors.any((sector) => sector.name.toLowerCase() == "musik");
       if (!hasMusik) {
         sectors.add(Sector(
@@ -198,72 +261,51 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-Widget _buildCreativeCategories(BuildContext context) {
-  return Padding(
-    padding: EdgeInsets.symmetric(horizontal: 20), // padding kiri dan kanan global
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Judul "Kategori"
-        Padding(
-          padding: const EdgeInsets.only(left: 4.0, bottom: 16), // lebih dekat ke grid
-          child: Text(
-            'Sektor Ekonomi Kreatif',
-            style: CustomTextStyles.titleMediumSemiBold,
+  Widget _buildCreativeCategories(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4.0, bottom: 16),
+            child: Text(
+              'Sektor Ekonomi Kreatif',
+              style: CustomTextStyles.titleMediumSemiBold,
+            ),
           ),
-        ),
-        // FutureBuilder dengan Wrap (Grid)
-        FutureBuilder<List<Sector>>(
-          future: fetchSectors(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error}"));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text("Tidak ada kategori tersedia."));
-            } else {
-              final sectors = snapshot.data!;
-              final selectedSectorIds = ['14', '6', '11', '8', '4', '17', '1', '5', '3'];
-              final displayedSectors = sectors
-                  .where((sector) => selectedSectorIds.contains(sector.id))
-                  .toList()
-                ..sort((a, b) => selectedSectorIds.indexOf(a.id).compareTo(selectedSectorIds.indexOf(b.id)));
+          FutureBuilder<List<Sector>>(
+            future: fetchSectors(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text("Error: ${snapshot.error}"));
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text("Tidak ada kategori tersedia."));
+              } else {
+                final sectors = snapshot.data!;
+                final selectedSectorIds = ['14', '6', '11', '8', '4', '17', '1', '5', '3',];
+                final displayedSectors = sectors
+                    .where((sector) => selectedSectorIds.contains(sector.id))
+                    .toList()
+                  ..sort((a, b) => selectedSectorIds.indexOf(a.id).compareTo(selectedSectorIds.indexOf(b.id)));
 
-              displayedSectors.add(
-                Sector(
-                  id: 'lainnya',
-                  name: 'Lainnya',
-                  iconUrl: 'assets/images/lainnya.png',
-                  isAsset: true,
-                ),
-              );
+                displayedSectors.add(
+                  Sector(
+                    id: 'lainnya',
+                    name: 'Lainnya',
+                    iconUrl: 'assets/images/lainnya.png',
+                    isAsset: true,
+                  ),
+                );
 
-              return Wrap(
-                spacing: 16, // jarak antar kolom
-                runSpacing: 28, // jarak antar baris
-                children: displayedSectors.map((sector) {
-                  return GestureDetector(
-                    onTap: () {
-                      if (sector.name == "Lainnya") {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => SektorScreen()),
-                        );
-                      } else {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PelakuUsahaScreen(
-                              sectorId: int.parse(sector.id),
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    child: SectorsGrid(
-                      sector: sector,
-                      onTapKategori: () {
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 28,
+                  children: displayedSectors.map((sector) {
+                    return GestureDetector(
+                      onTap: () {
                         if (sector.name == "Lainnya") {
                           Navigator.push(
                             context,
@@ -280,18 +322,36 @@ Widget _buildCreativeCategories(BuildContext context) {
                           );
                         }
                       },
-                    ),
-                  );
-                }).toList(),
-              );
-            }
-          },
-        ),
-      ],
-    ),
-  );
-}
-
+                      child: SectorsGrid(
+                        sector: sector,
+                        onTapKategori: () {
+                          if (sector.name == "Lainnya") {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => SektorScreen()),
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PelakuUsahaScreen(
+                                  sectorId: int.parse(sector.id),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  }).toList(),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<List<Event>> fetchEvents() async {
     try {
@@ -424,7 +484,7 @@ Widget _buildCreativeCategories(BuildContext context) {
     }
   }
 
-Widget _buildLatestArticels(BuildContext context) {
+  Widget _buildLatestArticels(BuildContext context) {
     return Container(
       width: double.maxFinite,
       margin: EdgeInsets.only(left: 22.h, right: 22.h),
@@ -470,7 +530,7 @@ Widget _buildLatestArticels(BuildContext context) {
       ),
     );
   }
-  
+
   Widget _buildLoadingArticle() => Center(child: CircularProgressIndicator());
 
   Widget _buildErrorArticle(String error) => Column(
@@ -499,14 +559,29 @@ Widget _buildLatestArticels(BuildContext context) {
   void _onEventTap(BuildContext context, Event event) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => InformasiEventScreen(event: event)),
+      MaterialPageRoute(builder: (_) => InformasiEventScreen(data: event)),
     );
   }
 
-  void _onArticleTap(BuildContext context, Article article) {
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(builder: (_) => InformasiArticleScreen(article: article)),
-    // );
+  Future<void> _handleLoginOrLogout(BuildContext context) async {
+    if (_isLoggedIn) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
+      await prefs.remove('user_role');
+      setState(() {
+        _isLoggedIn = false;
+        _userRole = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Anda telah logout')),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      ).then((_) {
+        _checkLoginStatus();
+      });
+    }
   }
 }

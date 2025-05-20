@@ -161,6 +161,10 @@ class ImageConstant {
   static String language = '$imagePath/language.png';
   static String pengusaha = '$imagePath/img_pengusaha.png';
   static String search = '$imagePath/img_search.png';
+  static String login = '$imagePath/login.png';
+  static String logout = '$imagePath/logout.png';
+  static String home = '$imagePath/home.png';
+  static String chat = '$imagePath/chat.png';
 
   static String phone = '$imagePath/img_phone.png';
 }
